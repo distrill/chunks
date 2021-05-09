@@ -2,7 +2,6 @@ use tetra::graphics::Color;
 
 pub const WINDOW_WIDTH: f32 = 1280.0;
 pub const WINDOW_HEIGHT: f32 = 720.0;
-pub const MOVEMENT_SPEED: f32 = 4.0;
 pub const ZOOM_SPEED: f32 = 0.1;
 pub const CHUNK_SIZE: f32 = 64.0;
 

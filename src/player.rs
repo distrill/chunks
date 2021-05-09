@@ -76,10 +76,10 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(ctx: &mut Context) -> tetra::Result<Player> {
+    pub fn new(ctx: &mut Context, position: Vec2<f32>) -> tetra::Result<Player> {
         Ok(Player {
             animation: PlayerAnimation::new(ctx)?,
-            position: Vec2::new(0.0, 0.0),
+            position
         })
     }
 }

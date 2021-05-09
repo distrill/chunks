@@ -17,60 +17,24 @@ struct GameState {
     map: Map,
     camera: Camera,
     player: Player,
+    velocity: Vec2<f32>,
+    position: Vec2<f32>,
 }
 
 impl GameState {
     fn new(ctx: &mut Context) -> tetra::Result<GameState> {
         let map = Map::new(ctx)?;
 
+        let velocity = Vec2::new(0.0, 0.0);
+        let position = Vec2::new(0.0, 0.0);
+
         let mut camera = Camera::new(WINDOW_WIDTH, WINDOW_HEIGHT);
-        camera.position.x = 0.0 as f32;
-        camera.position.y = 0.0 as f32;
         camera.scale = Vec2::new(2.0, 2.0);
+        camera.position = position;
 
-        let player = Player::new(ctx)?;
+        let player = Player::new(ctx, position)?;
 
-        Ok(GameState { map, camera, player })
-    }
-
-    fn handle_player_move(&mut self, ctx: &mut Context, direction: Direction) -> tetra::Result {
-        let old_pos = match direction {
-            Direction::Up => self.camera.position.y,
-            Direction::Down => self.camera.position.y,
-            Direction::Left => self.camera.position.x,
-            Direction::Right => self.camera.position.x,
-        };
-        let new_pos = match direction {
-            Direction::Up => old_pos - MOVEMENT_SPEED,
-            Direction::Down => old_pos + MOVEMENT_SPEED,
-            Direction::Left => old_pos - MOVEMENT_SPEED,
-            Direction::Right => old_pos + MOVEMENT_SPEED,
-        };
-        
-        match direction {
-            Direction::Up => {
-                self.camera.position.y = new_pos;
-                self.player.position.y = new_pos;
-            }
-            Direction::Down => {
-                self.camera.position.y = new_pos;
-                self.player.position.y = new_pos;
-            }
-            Direction::Left => {
-                self.camera.position.x = new_pos;
-                self.player.position.x = new_pos;
-            }
-            Direction::Right => {
-                self.camera.position.x = new_pos;
-                self.player.position.x = new_pos;
-            }
-        }
-
-        if (old_pos / CHUNK_SIZE) as i32 != (new_pos / CHUNK_SIZE) as i32 {
-            self.map.move_map(ctx, &direction)?;
-        }
-
-        Ok(())
+        Ok(GameState { map, camera, player, velocity, position })
     }
 }
 
@@ -108,54 +72,99 @@ impl State for GameState {
     }
 
     fn update(&mut self, ctx: &mut Context) -> tetra::Result {
+        let mut is_vert_moving_key_down = false;
+        let mut is_horiz_moving_key_down = false;
         if input::is_key_down(ctx, Key::W) {
-            self.handle_player_move(ctx, Direction::Up)?;
+            self.velocity.y = (self.velocity.y - 0.5).max(-5.0);
+            is_vert_moving_key_down = true;
         }
 
         if input::is_key_down(ctx, Key::S) {
-            self.handle_player_move(ctx, Direction::Down)?;
+            self.velocity.y = (self.velocity.y + 0.5).min(5.0);
+            is_vert_moving_key_down = true;
         }
 
         if input::is_key_down(ctx, Key::A) {
-            self.handle_player_move(ctx, Direction::Left)?;
+            self.velocity.x = (self.velocity.x - 0.5).max(-5.0);
+            is_horiz_moving_key_down = true;
         }
 
         if input::is_key_down(ctx, Key::D) {
-            self.handle_player_move(ctx, Direction::Right)?;
+            self.velocity.x = (self.velocity.x + 0.5).min(5.0);
+            is_horiz_moving_key_down = true;
         }
 
+        if !is_vert_moving_key_down {
+            self.velocity.y -= self.velocity.y.abs().min(0.5) * self.velocity.y.signum();
+        }
 
-        if input::is_key_pressed(ctx, Key::W) {
+        if !is_horiz_moving_key_down {
+            self.velocity.x -= self.velocity.x.abs().min(0.5) * self.velocity.x.signum();
+        }
+
+        let old_x = self.position.x;
+        let old_y = self.position.y;
+        
+        let new_x = old_x + self.velocity.x;
+        let new_y = old_y + self.velocity.y;
+
+
+        
+        if ((old_y / CHUNK_SIZE) as i32) < ((new_y / CHUNK_SIZE) as i32) {
+            self.map.move_map(ctx, &Direction::Down)?;
+        } else if ((old_y / CHUNK_SIZE) as i32) > ((new_y / CHUNK_SIZE) as i32) {
+            self.map.move_map(ctx, &Direction::Up)?;
+        }
+
+        if ((old_x / CHUNK_SIZE) as i32) < ((new_x / CHUNK_SIZE) as i32) {
+            self.map.move_map(ctx, &Direction::Right)?;
+        } else if ((old_x / CHUNK_SIZE) as i32) > ((new_x / CHUNK_SIZE) as i32) {
+            self.map.move_map(ctx, &Direction::Left)?;
+        }
+
+        let new_pos = Vec2::new(new_x, new_y);
+        self.position = new_pos;
+        self.camera.position = new_pos;
+        self.player.position = new_pos;
+
+        if self.velocity.x.abs() > 0.0 || self.velocity.y.abs() > 0.0 {
             self.player.animation.set_state(PlayerState::Running);
-        }
-
-        if input::is_key_pressed(ctx, Key::S) {
-            self.player.animation.set_state(PlayerState::Running);
-        }
-
-        if input::is_key_pressed(ctx, Key::A) {
-            self.player.animation.set_state(PlayerState::Running);
-        }
-
-        if input::is_key_pressed(ctx, Key::D) {
-            self.player.animation.set_state(PlayerState::Running);
-        }
-
-        if input::is_key_released(ctx, Key::W) {
+        } else {
             self.player.animation.set_state(PlayerState::Idle);
         }
-
-        if input::is_key_released(ctx, Key::S) {
-            self.player.animation.set_state(PlayerState::Idle);
-        }
-
-        if input::is_key_released(ctx, Key::A) {
-            self.player.animation.set_state(PlayerState::Idle);
-        }
-
-        if input::is_key_released(ctx, Key::D) {
-            self.player.animation.set_state(PlayerState::Idle);
-        }
+        // if self.velocity
+        
+        // if input::is_key_pressed(ctx, Key::W) {
+        //     self.player.animation.set_state(PlayerState::Running);
+        // }
+        //
+        // if input::is_key_pressed(ctx, Key::S) {
+        //     self.player.animation.set_state(PlayerState::Running);
+        // }
+        //
+        // if input::is_key_pressed(ctx, Key::A) {
+        //     self.player.animation.set_state(PlayerState::Running);
+        // }
+        //
+        // if input::is_key_pressed(ctx, Key::D) {
+        //     self.player.animation.set_state(PlayerState::Running);
+        // }
+        //
+        // if input::is_key_released(ctx, Key::W) {
+        //     self.player.animation.set_state(PlayerState::Idle);
+        // }
+        //
+        // if input::is_key_released(ctx, Key::S) {
+        //     self.player.animation.set_state(PlayerState::Idle);
+        // }
+        //
+        // if input::is_key_released(ctx, Key::A) {
+        //     self.player.animation.set_state(PlayerState::Idle);
+        // }
+        //
+        // if input::is_key_released(ctx, Key::D) {
+        //     self.player.animation.set_state(PlayerState::Idle);
+        // }
 
         if input::is_mouse_scrolled_up(ctx) {
             let newx = self.camera.scale.x + ZOOM_SPEED;
