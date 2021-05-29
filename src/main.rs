@@ -3,6 +3,9 @@ use tetra::input::{self, Key};
 use tetra::math::Vec2;
 use tetra::{Context, State, ContextBuilder};
 
+#[macro_use]
+extern crate log;
+
 mod constants;
 mod map;
 mod chunk;
@@ -132,39 +135,6 @@ impl State for GameState {
         } else {
             self.player.animation.set_state(PlayerState::Idle);
         }
-        // if self.velocity
-        
-        // if input::is_key_pressed(ctx, Key::W) {
-        //     self.player.animation.set_state(PlayerState::Running);
-        // }
-        //
-        // if input::is_key_pressed(ctx, Key::S) {
-        //     self.player.animation.set_state(PlayerState::Running);
-        // }
-        //
-        // if input::is_key_pressed(ctx, Key::A) {
-        //     self.player.animation.set_state(PlayerState::Running);
-        // }
-        //
-        // if input::is_key_pressed(ctx, Key::D) {
-        //     self.player.animation.set_state(PlayerState::Running);
-        // }
-        //
-        // if input::is_key_released(ctx, Key::W) {
-        //     self.player.animation.set_state(PlayerState::Idle);
-        // }
-        //
-        // if input::is_key_released(ctx, Key::S) {
-        //     self.player.animation.set_state(PlayerState::Idle);
-        // }
-        //
-        // if input::is_key_released(ctx, Key::A) {
-        //     self.player.animation.set_state(PlayerState::Idle);
-        // }
-        //
-        // if input::is_key_released(ctx, Key::D) {
-        //     self.player.animation.set_state(PlayerState::Idle);
-        // }
 
         if input::is_mouse_scrolled_up(ctx) {
             let newx = self.camera.scale.x + ZOOM_SPEED;
@@ -197,6 +167,10 @@ impl State for GameState {
 }
 
 fn main() -> tetra::Result {
+    env_logger::init();
+
+    info!("starting up");
+
     ContextBuilder::new("bc", 1280, 720)
         .quit_on_escape(true)
         .show_mouse(true)

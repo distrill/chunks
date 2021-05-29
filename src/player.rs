@@ -63,7 +63,7 @@ impl PlayerAnimation {
 
     pub fn set_state(&mut self, state:PlayerState) {
         if self.state != state {
-            println!("restart: {:?}, {:?}", self.state, state);
+            debug!("restart: {:?}, {:?}", self.state, state);
             self.state = state;
             self.current_mut().restart();
         }

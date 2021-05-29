@@ -37,6 +37,7 @@ pub enum Direction {
 
 pub struct Map {
     pub chunks: HashMap<i32, HashMap<i32, Chunk>>,
+    size: u32,
     pub drawn: VisibleMap,
 }
 
@@ -45,17 +46,19 @@ impl Map {
         // let mut chunks = Vec::with_capacity(height);
         let mut chunks = HashMap::new();
         let drawn = VisibleMap::new();
+        let mut size = 0;
 
         for i in drawn.minx - 55..drawn.maxx + 55 {
             let mut col = HashMap::new();
             for j in drawn.miny - 55.. drawn.maxy + 55 {
                 let chunk = Chunk::new(ctx, i as i32, j as i32)?;
                 col.insert(j, chunk);
+                size += 1;
             }
             chunks.insert(i, col);
         }
 
-        Ok(Map { chunks, drawn })
+        Ok(Map { chunks, drawn, size })
     }
 
     /// We draw whatever is on the screen, plus 2 chunks in all directions
@@ -66,40 +69,54 @@ impl Map {
             Direction::Up => {
                 self.drawn.miny -= 1;
                 self.drawn.maxy -= 1;
-                for i in (self.drawn.minx - 50)..(self.drawn.maxx + 50) {
+                for i in (self.drawn.minx - 50)..(self.drawn.maxx + 51) {
                     let j = self.drawn.miny - 50;
                     let col = self.chunks.entry(i).or_insert(HashMap::new());
-                    col.entry(j).or_insert(Chunk::new(ctx, i, j)?);
+                    if !col.contains_key(&j) {
+                        col.insert(j, Chunk::new(ctx, i, j)?);
+                        self.size += 1;
+                    }
                 }
             }
             Direction::Down => {
                 self.drawn.miny += 1;
                 self.drawn.maxy += 1;
-                for i in (self.drawn.minx - 50)..(self.drawn.maxx + 50) {
+                for i in (self.drawn.minx - 50)..(self.drawn.maxx + 51) {
                     let j = self.drawn.maxy + 50;
                     let col = self.chunks.entry(i).or_insert(HashMap::new());
-                    col.entry(j).or_insert(Chunk::new(ctx, i, j)?);
+                    if !col.contains_key(&j) {
+                        col.insert(j, Chunk::new(ctx, i, j)?);
+                        self.size += 1;
+                    }
                 }
             }
             Direction::Left => {
                 self.drawn.minx -= 1;
                 self.drawn.maxx -= 1;
-                for j in (self.drawn.miny - 50)..(self.drawn.maxy + 50) {
+                for j in (self.drawn.miny - 50)..(self.drawn.maxy + 51) {
                     let i = self.drawn.minx - 50;
                     let col = self.chunks.entry(i).or_insert(HashMap::new());
-                    col.entry(j).or_insert(Chunk::new(ctx, i, j)?);
+                    if !col.contains_key(&j) {
+                        col.insert(j, Chunk::new(ctx, i, j)?);
+                        self.size += 1;
+                    }
                 }
             }
             Direction::Right => {
                 self.drawn.minx += 1;
                 self.drawn.maxx += 1;
-                for j in (self.drawn.miny - 50)..(self.drawn.maxy + 50) {
+                for j in (self.drawn.miny - 50)..(self.drawn.maxy + 51) {
                     let i = self.drawn.maxx + 50;
                     let col = self.chunks.entry(i).or_insert(HashMap::new());
-                    col.entry(j).or_insert(Chunk::new(ctx, i, j)?);
+                    if !col.contains_key(&j) {
+                        col.insert(j, Chunk::new(ctx, i, j)?);
+                        self.size += 1;
+                    }
                 }
             }
         }
+
+        debug!("map moved! size: {}", self.size);
 
         Ok(())
     }
